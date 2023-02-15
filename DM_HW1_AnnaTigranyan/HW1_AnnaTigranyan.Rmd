@@ -1,0 +1,438 @@
+---
+title: "Homework Assignment 1"
+output: html_document
+Author: Anna Tigranyan
+---
+# Task 1 (30 points): Data Cleaning
+
+### a.Import the file into R. Detect missing values and convert them to NAs. There are 4 types of missing values. Comment on your findings the types of missing values
+
+
+```{r message=FALSE, warning=FALSE, results="hide"}
+library(readr)
+HW1 <- read_csv("HW1.csv")
+dat<- HW1
+```
+
+```{r}
+head(dat)
+```
+From  information about our data  we can see that in columns: -'Pre_P1','Pre_P3','Pre_P4','Pre_P5',
+-'Pre_P7','Pre_P9','Post_P1','Post_P3',
+-'Post_P4','Post_P5','Post_P7','Post_P9'
+we have values(98,99,100) that we need to convert to NA-s.
+
+So we have 4 types of Missing Values in our data:
+1.NAN values
+2.98-Prefer not to respond
+3.99-Do not know
+4.100
+
+Let's convert 98,99 and 100 values to NA-s: 
+
+
+```{r}
+cols = colnames(dat) 
+c = c(98,99,100)
+for(i in c){
+  dat[,cols][dat[,cols]==i] <- NA
+}
+
+
+```
+
+
+### b.How many missing values are in the data?
+
+
+```{r }
+# checking NA values
+na = is.na(dat)
+sum(na)
+```
+We see that we have **115 Missing Values** in our data set.
+
+**Finding NA values for each column:**
+```{r}
+colSums(na)
+```
+### c.Two of the variables consist of inconsistent values. Detect them using the function table(). Solve the problem without losing the information.
+
+```{r message=FALSE, warning=FALSE, results="hide" }
+sapply(dat, table)
+```
+From this we can see that we have inconsistent values in **Pre_Answers** and **Pre_P6** columns
+
+Let's look:
+```{r }
+print(table(dat$Pre_Answers))
+```
+**Pre_Answers** represents 'number of correct answers(before treatment)' and it  can not be negative.From above table we see that Pre_Answers column contains
+<br>1 **-6**
+<br>1 **-5**
+<br> inconsistent values.
+```{r }
+print(table(dat$Pre_P6))
+```
+And from above we can see that we have 2 inconsistent values in Pre_P6 column:
+<br> 1 **1w**
+<br> 1 **2w**
+
+**Solving this problem:**
+```{r }
+#convert negative values to positive in Pre_Answers
+dat$Pre_Answers = abs(dat$Pre_Answers) 
+
+# converting 1w to 1,2w to 2 in Pre_P6
+dat$Pre_P6[which(dat$Pre_P6 == "1w")] = 1
+dat$Pre_P6[which(dat$Pre_P6 == "2w")] = 2
+
+```
+
+We don't have inconsistent values in our data anymore.
+
+### d.Check whether the data types are correct, if not make appropriate corrections assigning labels to each level according to the data description. For checking, use the function sapply().
+```{r }
+sapply(dat,class)
+
+```
+```{r }
+# ID is integer
+dat$ID <- as.integer(dat$ID)
+
+# Pre_Treatmen.type (Control, Treatment 1 , Treatment 2) is categorical:
+dat$Pre_Treatmen.type <- factor(dat$Pre_Treatmen.type,labels = c('Control','Treatment1','Treatment2')) 
+
+# Pre_Date, Post_Date, P2 are Date
+dat$Pre_Date = as.Date(dat$Pre_Date, "%m/%d/%Y")
+dat$Post_Date = as.Date(dat$Post_Date, "%m/%d/%Y")
+dat$P2 = as.Date(dat$P2, "%m/%d/%Y")
+
+# Pre_P1, Post_P1 (gender) are categorical:
+dat$Pre_P1 <-factor(dat$Pre_P1, labels = c('F','M')) 
+dat$Post_P1 <-factor(dat$Pre_P1, labels = c('F','M')) 
+
+# Pre_P4, Post_P4 (performance of 1 semester (1:Excellent, 2:Satisfactory, 3:Fair)) are categorical
+dat$Pre_P4 <-factor(dat$Pre_P4, labels = c("Excellent", "Satisfactory", "Fair"))
+dat$Post_P4 <-factor(dat$Post_P4, labels = c("Excellent", "Satisfactory", "Fair"))
+
+# Pre_P5, Post_P5(mother's education level(1: Secondary school, 2: Vocational, 3: Higher education)) are categorical
+dat$Pre_P5 <-factor(dat$Pre_P5, labels = c("Secondary school", "Vocational", "Higher education"))
+dat$Post_P5 <-factor(dat$Post_P5, labels = c("Secondary school", "Vocational", "Higher education"))
+
+# Pre_Answers,Post_Answers (number of correct answers) are integer
+dat$Pre_Answers <- as.integer(dat$Pre_Answers)
+dat$Post_Answers <- as.integer(dat$Post_Answers)
+
+```
+
+Now we have correct data types.
+
+###e.Create two variables of age using dates of surveys
+
+```{r }
+dat$Pre_age = as.numeric(round( (dat$Pre_Date-dat$P2) / 365, 2) )
+dat$Post_age = as.numeric(round( (dat$Post_Date-dat$P2) / 365, 2) )
+
+```
+### f.There are two variables (apart from age) that provide the same information, drop one of them. Get rid of variables that are irrelevant for visualization and/or variables that are not provided in the data description. Drop NA-s.
+
+**the same information** provides - Post_P1(gender after treatment)-Pre_P1( before treatment),Post_age-Pre_age
+<br>**not provided in the data description** ` Pre_P6, Post_P6,Pre_Pre
+<br>**irrelevant for visualization** P2,Pre_Date,Post_Date,Post_P5
+
+```{r }
+dat <- subset(dat, select= -c(Pre_P6, Post_P6, Pre_P1,Pre_Pre, P2, Pre_Date,Post_Date,Post_age))
+
+```
+
+```{r  message=FALSE, warning=FALSE, results="hide"}
+library(tidyr)
+# dropping NAs
+dat <- dat %>% drop_na()
+
+```
+
+```{r }
+sum(is.na(dat))
+```
+We see that we don't have NA values in our data anymore.
+
+### g. Show and describe the structure and dimension of the data. Classify variables as qualitative (nominal or ordinal) or quantitative (interval or ratio).
+
+```{r }
+str(dat)
+```
+**qualitative**
+<br>**nominal** --- Pre_1,Pre_Treatmen.type
+<br>**ordinal** --- Pre_P3,Post_P3,Pre_P4,Post_P4,Pre_P5,Post_P5
+<br>**quantitative**
+<br>**ratio** --- Pre_P7,Post_P7,Pre_P9,Post_P9,income,spendings,Pre_Answers,Post_Answers,Pre_age
+
+# Task 2 (30 points): Summary Statistics
+
+### a.Create a function that takes the categorical variable as an argument and returns a table with the number and the percentage of each category (e.g. males and females) in each group of treatment status. The columns of final table will be:<br>-Treatment Type<br>-Categorical Variable Name<br>Number of observations<br>Percentage
+
+```{r  message=FALSE, warning=FALSE, results="hide"}
+library(dplyr)
+
+table_a <- function(var){
+  var <-enquo(var)
+  new_table <- dat %>%
+    group_by( Pre_Treatmen.type,!!var) %>%
+    summarise(Number_of_observations = n())%>%
+    ungroup() %>%
+    group_by('Treatment type'= Pre_Treatmen.type) %>%
+    mutate('Percentage' = round((Number_of_observations/sum(Number_of_observations)*100),2) )
+  return(new_table)
+    
+}
+```
+**Example**
+```{r  message=FALSE, warning=FALSE}
+table_a(Post_P1)
+```
+### b.Create a function that takes a numeric variable as an argument and returns the table with the mean and standard deviation of argument grouped by treatment status. The columns of the final table will be:<br>-Treatment Type<br>-Mean<br>-Standard deviation
+
+```{r  message=FALSE, warning=FALSE, results="hide"}
+table_b <- function(var){
+  var = enquo(var)
+  new_table <- dat %>% 
+              group_by('Treatment type'=Pre_Treatmen.type)%>%
+              summarise('Mean'=mean(!!var),'Standart deviation'=sd(!!var))
+  return(new_table)
+}    
+
+```
+**Example**
+```{r  message=FALSE, warning=FALSE }
+table_b(income)
+
+```
+### c.Show the mean and variability of spendings by groups. Show the number of observations grouped by gender and treatment type. Then show the number of observations grouped by another categorical variable (choose your own) and treatment type. Add Chi-square and ANOVA F value with corresponding p-values to the footnote of tables.3
+```{r  message=FALSE, warning=FALSE, results="hide"}
+new_table1 <- table_b(spendings)
+
+```
+```{r  message=FALSE, warning=FALSE, results="hide"}
+chisq1 <- chisq.test(dat$spendings,dat$Pre_Treatmen.type)
+```
+```{r  message=FALSE, warning=FALSE}
+aov1 = aov(dat$spendings~dat$Pre_Treatmen.type)
+summary(aov1)
+```
+```{r  message=FALSE, warning=FALSE,}
+library(kableExtra)
+
+footnote(knitr::kable(new_table1,'html'),general_title='_________________________',c('p_value',chisq1[3],
+         'F_value',0.348))
+```
+
+```{r message=FALSE, warning=FALSE, results="hide"}
+new_table2 <-  dat %>% 
+    group_by('Gender'= Post_P1,'Treatment type'= Pre_Treatmen.type)%>%
+    summarise('Number of observations' = n())
+chisq2 <- chisq.test(dat$Post_P1,dat$Pre_Treatmen.type)
+```
+
+```{r message=FALSE, warning=FALSE}
+footnote(knitr::kable(new_table2,'html'),general_title='_________________________',c('p_value',chisq2[3]))
+```
+```{r message=FALSE, warning=FALSE, results="hide"}
+new_table3 <- dat %>% 
+    group_by('Performance'= Post_P5,'Treatment type'= Pre_Treatmen.type)%>%
+    summarise('Number of observations' = n())
+chisq3 <- chisq.test(dat$Post_P5,dat$Pre_Treatmen.type)
+```
+
+```{r message=FALSE, warning=FALSE}
+footnote(knitr::kable(new_table3,'html'),general_title='_________________________',c('p_value',chisq3[3]))
+```
+### d.Check the relationship between age and treatment type. Comment on it (in the sense of randomization).
+```{r}
+table_b(Pre_age)
+```
+
+From above table we see that mean age for **Control group** is higher than the mean age of **Treatment1** group which is higher than the mean age of **Treatment2** group.And Standard deviations too. It means that our data may have randomization problem with Treatment group and age(Control group students older than T1 and T2 group students).
+
+### e.Balance the data (Use MatchIt package)
+
+###  Change the levels of variable Treatment type in the following way: create a new variable with two levels: Treatment      (T1+T2) and Control.
+```{r  message=FALSE, warning=FALSE, results="hide"}
+a <- c( )
+
+for(i in dat$Pre_Treatmen.type){
+  
+  if(i == "Control"){
+    a <- append(a, i)
+  } 
+  else {
+    a <-append(a, "Treatment")
+  }
+}
+dat$Treatment_Type <- a
+dat$Treatment_Type <- factor(dat$Treatment_Type, labels = c('Control', 'Treatment'))
+
+```
+
+# Task 3 (30 points): Data Visualization
+
+### a.Describe one numeric variable and the variable treatment type (separately). Comment on it.
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results="hide"}
+library(ggplot2)
+library(gridExtra)
+```
+
+Let's see the **income** for each treatment type:
+
+```{r message=FALSE, warning=FALSE}
+table_b(income)
+```
+
+From above table we see that in C, T1 and T2 average income is almost the same.
+
+### b.By using the dataset reproduce the following graph<br>Hint: use the function from 2a. Pay attention to<br>-Titles (one title for two graphs) and labels<br>-Legends (one legend)<br>-Theme and style (gdocs).<br>-Percentages.
+```{r message=FALSE, warning=FALSE}
+table_post <- table_a(Post_P4)
+table_pre <- table_a(Pre_P4)
+```
+
+```{r  message=FALSE, warning=FALSE}
+library(ggpubr)
+
+plot_1 <- table_pre %>% ggplot(aes(x=Pre_Treatmen.type, y=Number_of_observations, fill=Pre_P4)) +
+            xlab(" ") + ylab("Count")+geom_bar(stat="identity", width=0.9, position = "dodge")+
+            geom_text(aes(label=Number_of_observations),position=position_dodge(0.8),vjust =-0.5,size=3)+
+            geom_text(aes(label=Percentage),position=position_dodge(0.9),vjust =-2,size=3)+
+            scale_fill_manual(values=c('seagreen3','coral','darkorchid2'))
+              
+              
+plot_2 <- table_post %>% ggplot(aes(x=Pre_Treatmen.type, y =Number_of_observations, fill= Post_P4)) +
+              xlab(" ") + ylab(" ")+geom_bar(stat="identity", width=0.9, position = "dodge")+
+              geom_text(aes(label=Number_of_observations),position=position_dodge(0.8),vjust =-0.5,size=3)+
+              geom_text(aes(label=Percentage),position=position_dodge(0.9),vjust =-2,size=3)+
+              scale_fill_manual(values=c('seagreen3','coral','darkorchid2'))
+
+plot = ggarrange(plot_1, plot_2, ncol=2, common.legend = TRUE, legend="top")
+annotate_figure(plot, top = text_grob("Graph1:Treatment type by overall performance (Pre,Post)", 
+                face = "bold", size = 14))
+
+```
+
+
+
+### <br>c.Consider grouped graphical comparisons for the chosen numeric variable and treatment type. Comment on it.
+
+```{r message=FALSE, warning=FALSE}
+library(gridExtra)
+
+plt1 = ggplot(dat, aes(x=Pre_Treatmen.type, y=income,color = 'red')) + xlab('Treatment type')+
+  ylab('Income')+ geom_point(show.legend = FALSE)+ggtitle("Income by Treatment type") 
+
+plt2 = ggplot(dat, aes(x = income, fill = Pre_Treatmen.type,colour = Pre_Treatmen.type)) +
+  geom_density(alpha = 0.4)+theme(legend.position="bottom")+ggtitle("Density of income by Treat. type") 
+
+grid.arrange(plt1,plt2,ncol = 2,top = "Graph2: Income by Treatment type")
+```
+
+<br>From Graph1 we see that the **Treatment1**  group includes **fewer** students from **middle-income** families than the **Treatment2** and **Control** groups. **Treatment1**  group includes more students from **lower-income**(39-495) families, than **Treatment2** and **Control** groups.And all this despite the fact that the **average income** is almost the same for all groups(From above table)???
+
+```{r}
+
+p1 = ggplot(dat, aes(x=Pre_Treatmen.type, y=Pre_age,color = 'red')) + xlab('Treatment type')+
+  ylab('Age') + geom_point(show.legend = FALSE)+ggtitle("Age by Treatment type") 
+
+p2 = ggplot(dat, aes(x = Pre_age, fill = Pre_Treatmen.type,colour = Pre_Treatmen.type)) +
+  geom_density(alpha = 0.4)+theme(legend.position="bottom")+ggtitle("Density of age by Treat. type") 
+
+grid.arrange(p1,p2,ncol = 2,top = "Graph3: Age by Treatment type")
+```
+
+
+<br>From above graphs we see that in **Control** group there are older students than in Treatment1 and Treatment2 gropus.
+
+
+#### d.Make meaningful conclusions based on b and c (remember about the randomization).
+
+From Graph 1 we see that number of 'Excellent' students have increased.It mean that for T2 group seminars and the existing videos have had a positive effect.But for T1 group seminars haven't had significant impact???We can conclude that the videos have had a big impact on the progress of students.
+
+#### e.Find the pattern between savings and income, use three variables (third must be categorical). Comment on it.
+
+```{r}
+pl1  = ggplot(dat, aes(x=income, y=income-spendings,color = Post_P1)) + xlab('Income')+
+  ylab('Savings')+ geom_line()+ggtitle("Grapg3: Savings by income") 
+pl1
+```
+
+
+<br>From this graph we see that for Male students families:
+<br>if income level is **low** they save more  than families of Female students. 
+<br>if income level is **high** they save more  than families of Female students.
+
+### f(Confirm your findings) Compute the correlation between the variables, visualize correlation by using the package ggcorrplot. Does any type of relationship exist among variables if the Pearson correlation coefficient is near 0?
+
+```{r message=FALSE, warning=FALSE}
+library(ggcorrplot)
+c = cor(dat[c(3,6,7,9,12,13,14,15,17,18)])
+
+ggcorrplot(c)
+```
+
+
+<br>We see that we have near 0 corr for some variables(Pre_age,Post_P3(age,math grade),Post_P7,Post_P3(people living home,math grade)....) 
+
+
+### g.Approve or reject (using the appropriate visualization):
+### "After both seminars and video education, the number of answers is increasing noticeably in all groups."
+
+```{r message=FALSE, warning=FALSE, results="hide"}
+post_table <- table_b(Post_Answers)
+pre_table <- table_b(Pre_Answers)
+
+```
+
+```{r message=FALSE, warning=FALSE}
+
+
+pl1 <- pre_table %>% ggplot(aes(x=`Treatment type`, y= Mean, fill=`Treatment type`)) +
+              geom_bar(stat="identity", width=0.9, position = "dodge") + 
+              geom_text(aes(label=round(Mean)))
+              
+            
+pl2 <- post_table %>% ggplot(aes(x=`Treatment type`, y =Mean, fill=`Treatment type`)) +
+              geom_bar(stat="identity", width=0.9, position = "dodge")+
+              geom_text(aes(label=round(Mean)))
+
+p = ggarrange(pl1, pl2, ncol=2, common.legend = TRUE, legend="top")
+annotate_figure(p, top = text_grob("Graph4: Mean answers by Treatment type",face = "bold", size = 14))
+```
+
+
+<br>From above we see that:
+<br>"After both seminars and video education, the number of answers is increasing noticeably in all groups." is **True**
+
+# Questions (10 points)
+### a.What is the difference between ratio and interval variables?
+
+What is the difference between ratio and interval variables?
+**An interval** variable is variable for which there is **an order** and the **difference between two values** is meaningful(for example temperature). **Ratio variable** is the same as interval variable but When the it equals 0, **'there is none of that variable'**.For example  height is ratio variable,because when it is 0 it means that there is no weight.But temperature(Celcius) is not ratio because 0 doesn't mean that there is no temperature.
+
+### b.Can we rely only on summary statistics in analyzing the data? Why?
+
+We can't rely only on summary statistics in analyzing the data, because it is not provides complete information.
+For example in our data we have that average incomes for our C T1 and T2 groups are almost the same and based on this information we can say that in our groups there there is no problem of randomization depending on income.
+But if we look et the graphs(in this case density) we can notice that there are problems(in our case we have randomization problem for groups depending in income) that we can't see  using only summary statistics.
+
+### c.Can we use the bar plot to describe the numeric variable? Why? Which kind of visualization can be used for numeric data? What about the relationship between 2 numeric variables?
+We use the bar plot to describe the numeric values for levels of a categorical feature.For example we used it in our problem to describe average number of answers depends on Treatment group category.So we **can't use bar plot to describe numeric variables**.For numeric variables we can use **histograms**.And for plotting relationship between 2 numeric variables we can use **scatter plot**.
+
+### d.How much time did it take you to accomplish the HW?
+
+Almost a week.
+
+
+
+
+
+
