@@ -1,0 +1,386 @@
+---
+title: "Homework 3"
+author: "Anna Tigranyan"
+date: "05/06/2022"
+output:
+  word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+# Problem 1 (30 ptoints)
+<br>
+
+**(a)** What are the differences among exclusive, overlapping and fuzzy clustering?
+Bring (create your own) an example of fuzzy clustering with
+k = 2. Use the function funny() from library cluster and data visualization
+techniques from package factoextra to show your results.
+Show the membership matrix. Which of your observations belongs to
+both clusters?
+<br>
+
+**(b)** Suppose we have an example of a data set with 20 observations. We
+need to cluster the data using the K-means algorithm. After clustering
+using k = 1, 2, 3, 4 and 5 we obtained only one non-empty cluster. How
+is it possible?
+<br>
+
+**(c)** Suppose we have an example of a data set consisting of three natural
+circular clusters. These clusters have the same number of points and
+have the same distribution. The centers of clusters lie on a line, the
+clusters are located such that the center of the middle cluster is equally
+distant from the other two. Why will not bisecting K-means find the
+correct cluster?<br>
+
+<br>
+
+## (a) What are the differences among exclusive, overlapping and fuzzy clustering?Bring (create your own) an example of fuzzy clustering with k = 2. Use the function funny() from library cluster and data visualization techniques from package factoextra to show your results. Show the membership matrix. Which of your observations belongs to both clusters?
+<br>
+**exclusive clustering** - This separation is based on the characteristic that allows a data object to exist 1 or more than 1 clusters. Exclusive clustering is as the name suggests and stipulates that each data object can only exist in one cluster.<br>
+**overlapping clustering** - Overlapping  allows data objects to be grouped in 2 or more clusters.For example in university overlapping clustering would allow a student to also be grouped as an employee while exclusive clustering would demand that the person must choose the one that is more important.<br>
+**Fuzzy clustering**-In Fuzzy clustering every data object belongs to every cluster,we can describe fuzzy clustering as an extreme version of overlapping, the major difference is that the data objects has a membership weight that is between 0 to 1 where 0 means it does not belong to a given cluster and 1 means it absolutely belongs to the cluster. Fuzzy clustering is also known as probabilistic clustering.
+<br>
+
+
+```{r results="hide", message=FALSE, warning=FALSE}
+library(cluster)
+library(factoextra)
+library(ggplot2)
+library(tidyverse)
+
+```
+
+```{r message=FALSE, warning=FALSE}
+x <- rbind(matrix(rnorm(500, mean=0.5, sd=0.1), ncol=2), matrix(rnorm(500, mean=0.2, sd=0.1), ncol=2))
+plot(x)
+```
+
+```{r message=FALSE, warning=FALSE}
+
+f = fanny(x=x, k=2, metric = "euclidean", stand = FALSE)
+head(f$membership, 10) # Membership coefficients
+```
+
+
+```{r}
+x = as.data.frame(x)
+```
+
+```{r message=FALSE, warning=FALSE}
+
+
+kms<-kmeans(x,2,nstart=100)
+
+fviz_cluster(kms, data = x, alpha=0.2,shape=19,geom = "point")
+
+```
+
+<br>
+
+From plot we can see that we don't have  observations belong to both clusters.
+
+<br>
+
+## (b) Suppose we have an example of a data set with 20 observations. We need to cluster the data using the K-means algorithm. After clustering using k = 1, 2, 3, 4 and 5 we obtained only one non-empty cluster. How is it possible?
+
+<br>
+
+Empty clusters can happen when using K-means clustering algorithm, if the random initialization is bad, the number of K is inappropriate, the number of K is more than the number of data points in the data set. The original K-means algorithms is not designed to handle this situation. However,if we find empty clusters while running K-means, it will drop those clusters in the next iteration. So we may end up with fewer final clusters than we initially gave to the algorithm. To avoid this situation, we may want to try different K or improve initialization of the initial cluster centers.
+In this case if we have 20 observations, I think the points are probably very close to each other, and there are actually  1 cluster. ???So if we choose k values 2,3,4 and 5 K-means algorithm  separates only 1 non-empty cluster.
+
+<br>
+
+## (c) Suppose we have an example of a data set consisting of three natural circular clusters. These clusters have the same number of points and have the same distribution. The centers of clusters lie on a line, the clusters are located such that the center of the middle cluster is equally distant from the other two. Why will not bisecting K-means find the correct cluster?
+<br>
+
+Bisecting K-means clustering technique is a little modification to the regular K-Means algorithm, wherein you fix the procedure of dividing the data into clusters. So, similar to K-means, we first initialize K centroids. After which we apply regular K-means with K=2 (that's why the word bisecting). We keep repeating this bisection step until the desired number of clusters are reached. After the first bisection (when we have 2 clusters) is done, one can think of multiple strategies for selecting one of the clusters and re-iterating the entire process of bisection and assignment within that cluster - for example: choose cluster with maximum variance or the spread-out cluster, choose cluster with the maximum number of data points, etc.
+As we mentioned in the first step (bisection) we will divide our points into 2  clusters.If this bisection is 'incorrect' and  each of 2  parts contains points from  2 cluster , then in further bisections we will deepen the problem and  we will not be able to perform the correct clustering.<br>
+
+<br>
+
+
+# Problem 2 (30 points)
+
+Consider the following dataset:<br>
+
+```{r }
+var1 <- c(2,2,8,0,7,0,1,7,3,9)
+var2 <- c(5,3,3,4,5,7,5,3,7,5)
+df <- data.frame(var1,var2)
+df
+
+```
+
+<br>
+The goal of this task is to perform K-means clustering via R (manually),
+with k = 2, using data with 2 features from the table above. Follow the step
+above:
+<br>
+**(a)** Neatly plot the observations using ggplot.
+<br>
+**(b)** Randomly assign a cluster label to each observation. You can use the
+sample() command in R to do it. Report the cluster labels for each
+observation.
+<br>
+**(c)** Define the coordinates of the centroids for each cluster. Show your
+results.
+<br>
+**(d)** Assign each observation to the cluster using the closeness of each observation to the centroids, in terms of Euclidean distance. Report the
+cluster labels for each observation.
+<br>
+**(e)** Repeat (c) and (d) until the centroids remain the same. You can use
+loops for this task.
+<br>
+**(f)** Show the observations on the plot by coloring them according to the
+clusters obtained. Show centroids on the plot.
+<br>
+
+# (a) Neatly plot the observations using ggplot.<br>
+
+Let's  plot the data points and visualize them using ggplot:
+```{r}
+ggplot(data=df,aes(x=var1,y=var2))+geom_point(size=5,color='blue')+ggtitle('Data points')
+```
+
+<br>
+
+# (b) Randomly assign a cluster label to each observation. You can use the sample() command in R to do it. Report the cluster labels for each observation.
+<br>
+
+```{r}
+df['random_cluster'] = sample(c(0,1), size = nrow(df), replace = TRUE)
+df
+```
+Let's plot and see randomly chosen clusters.
+
+```{r}
+ggplot(data=df,aes(x=var1,y=var2,color=random_cluster))+geom_point(size=5)+ggtitle('Data points')
+
+```
+
+# (c) Define the coordinates of the centroids for each cluster. Show your results.
+```{r}
+# Centroid of 0s
+c_0_x <- mean(df$var1[df$random_cluster==0])
+c_0_y <- mean(df$var2[df$random_cluster==0])
+# Centroid of 1s
+c_1_x <- mean(df$var1[df$random_cluster==1])
+c_1_y <- mean(df$var2[df$random_cluster==1])
+paste('centroid of 0s: (',c_0_x,',',c_0_y,')')
+paste('centroid of 1s: (',c_1_x,',',c_1_y,')')
+```
+<br>
+Now lets plot our points and centroids.
+<br>
+```{r}
+ggplot(data=df,aes(x=var1,y=var2,color=random_cluster)) + geom_point(size=5) +
+      geom_point(aes(x=c_0_x,y=c_0_y),size=5,colour="black",shape=3) +
+      geom_point(aes(x=c_1_x,y=c_1_y),size=5,colour="blue",shape=3)
+```
+
+<br>
+
+# (d)Assign each observation to the cluster using the closeness of each observation to the centroids, in terms of Euclidean distance. Report the cluster labels for each observation
+
+There are three steps in computing the Euclidean distance:<br>
+
+ - Compute the difference between the corresponding X and Y coordinates of the data-points and the centroid.<br>
+- Compute the sum of the square of the differences computed in Step 1.<br>
+- Find the square root of the sum of squares of differences computed in Step 2.<br>
+
+Let's do it for each centroid:
+
+```{r}
+distance_from_cluster_0 = (df[,c(1,2)] - c(c_0_x,c_0_y))^2
+distance_from_cluster_0 = sqrt(distance_from_cluster_0[,1] + distance_from_cluster_0[,2])
+distance_from_cluster_0
+```
+
+
+```{r}
+distance_from_cluster_1 = (df[,c(1,2)] - c(c_1_x,c_1_y))^2
+distance_from_cluster_1 = sqrt(distance_from_cluster_1[,1] + distance_from_cluster_1[,2])
+distance_from_cluster_1
+```
+
+Combining distance_from_cluster_0 and distance_from_cluster_1, we get the total distance array called total_distance. This array contains the distances between points and the centroids. We use this array to determine which cluster a given point belongs to.
+
+```{r}
+total_distance = array(c(distance_from_cluster_0, distance_from_cluster_1), dim = c(10, 2))
+total_distance
+```
+
+Let's create a logical vector comparing distance_from_cluster_0 and distance_from_cluster_1. This vector will be comprised of the Boolean values TRUE and FALSE.<br>
+
+The condition would be as follows: distance to the first cluster is less than the second cluster's distance. Points that satisfy this condition belong to cluster 0. The remaining points belong to cluster 1.
+```{r}
+library(dplyr)
+df = df %>% mutate(new_cluster = case_when(c(total_distance[,1] <= total_distance[,2])==TRUE ~ 0,
+                            c(total_distance[,1] <= total_distance[,2])==FALSE ~ 1))
+df
+```
+
+```{r}
+c(total_distance[,1] <= total_distance[,2])
+```
+Elements that satisfy this condition in the df are printed bilow:
+```{r}
+df[,1][c(total_distance[,1] <= total_distance[,2])]
+```
+To find the centroid of the newly formed cluster, we take the mean of all the points obtained above.
+```{r}
+mean(df[,1][c(total_distance[,1] <= total_distance[,2])])
+
+```
+
+We compute the X and Y coordinates of the centroid using the code above. We store the X coordinate in c0 and y-coordinates in c1. We copy the data in these lists to a new array called new_centroid.
+```{r}
+c0 = c(mean(df[,1][c(total_distance[,1] <= total_distance[,2])]), mean(df[,2][c(total_distance[,1] <= total_distance[,2])]))
+
+c1 = c(mean(df[,1][!c(total_distance[,1] <= total_distance[,2])]), mean(df[,2][!c(total_distance[,1] <=total_distance[,2])]))
+new_centroid = matrix( nrow = 2, ncol = 2)
+new_centroid[1,] = c0
+new_centroid[2,] = c1
+new_centroid
+```
+
+The new_centroid contains the updated centroid of the formed clusters.<br>
+Let's plot the new centroids :
+
+
+```{r}
+ggplot(data=df,aes(x=var1,y=var2,color=new_cluster)) + geom_point(size=5) +
+  geom_point(aes(x=new_centroid[1,1],y=new_centroid[1,2]),size=5,shape=3,colour="black") +
+  geom_point(aes(x=new_centroid[2,1],y=new_centroid[2,2]),size=5,shape=3,colour="blue")
+
+```
+
+## (e) Repeat (c) and (d) until the centroids remain the same. You can use loops for this task.
+```{r}
+
+for (i in 1:5){
+  distance_from_cluster_0 = (df[,c(1,2)] - new_centroid[1,])^2
+  distance_from_cluster_0 = sqrt(distance_from_cluster_0[,1] + distance_from_cluster_0[,2])
+  
+  distance_from_cluster_1 = (df[,c(1,2)] - new_centroid[2,])^2
+  distance_from_cluster_1 = sqrt(distance_from_cluster_1[,1] + distance_from_cluster_1[,2])
+  
+  total_distance = array(c(distance_from_cluster_0, distance_from_cluster_1), dim = c(10, 2))
+  
+  df$new_cluster = case_when(c(total_distance[,1] <= total_distance[,2])==TRUE ~ 0,c(total_distance[,1] <= total_distance[,2])==FALSE ~ 1)
+  
+  c0 = c(mean(df[,1][c(total_distance[,1] <= total_distance[,2])]), mean(df[,2][c(total_distance[,1] <= total_distance[,2])]))
+
+  c1 = c(mean(df[,1][!c(total_distance[,1] <= total_distance[,2])]), mean(df[,2][!c(total_distance[,1] <=total_distance[,2])]))
+  
+  new_centroid[1,] = c0
+  new_centroid[2,] = c1
+
+  print(new_centroid)
+  
+}
+```
+
+## (f)Show the observations on the plot by coloring them according to the clusters obtained. Show centroids on the plot.
+
+```{r}
+
+ggplot(data=df,aes(x=var1,y=var2,color=new_cluster)) + geom_point(size=5) +
+  geom_point(aes(x=new_centroid[1,1],y=new_centroid[1,2]),size=5,shape=3,colour="black") +
+  geom_point(aes(x=new_centroid[2,1],y=new_centroid[2,2]),size=5,shape=3,colour="blue")
+
+```
+
+# Problem 3 (40 points)
+<br>
+For this task you need to download World Value Survey (Wave 6) data and
+try to understand the disposition of our country among others based on some
+criterias. The description of the variables and the survey are given with a
+separate file. Here is the link to obtain more information: . Choose the
+subset1 fromWave 6 data to perform the cluster analysis. Note that you need
+to use meaningful selections both of variables based on some topic/problem2
+and countries3.<br>
+**(a)** Describe thoroughly how and why you choose your subset of variables
+and observations. What is your goal? Hint: You need to prepare data
+for the next step.<br>
+**(b)** Use all (appropriate) tools/functions from our lecture to cluster the
+countries (both nested and untested algorithms). Interpret them.<br>
+**(b1)** Is your hierarchical clustering stable regards to between clusters distance
+measures?<br>
+**(b2)** Compare the results obtained from two different k-means.<br>
+**(c)** Make the conclusion (also based on cluster centers).<br>
+<br>
+
+```{r message=FALSE, warning=FALSE}
+library(readr)
+dat <- read_csv('WaveData.csv')
+```
+
+```{r}
+head(dat)
+```
+**Variables**<br>
+I have selected the following variables from the given data set??<br>
+- V2 - country code number
+- V7 -Politics(how important it is in your life.1-4(1-very important,4-Not at all important))<br>
+- V10 - Taking all things together, would you say you are (read out and code one answer):<br>
+    1 Very happy<br>
+    2 Rather happy<br>
+    3 Not very happy<br>
+    4 Not at all happy <br>
+**Countries**I have taken Armenia and neighboring countries .  <br>
+**Problem:** How does the importance of politics affect happiness for different countries?<br>
+
+```{r}
+dat1 <- subset(dat, select=c(V2,V7,V10) )
+head(dat1)
+```
+
+```{r}
+
+# 51 Armenia
+# 31 Azerbaijan 
+# 268 Georgia
+# 364 Iran 
+# 792 Turkey
+# 643 Russia
+
+# Choosing rows containing above countries 
+dat2 = dat1[dat1$V2==51|dat1$V2==31|dat1$V2==268|dat1$V2==364|dat1$V2==792|dat1$V2==643,]
+
+# changing data types of our variables to categorical (all variables are categorical)
+# dat2$V2 = as.factor(dat2$V2)
+# dat2$V7 = factor(dat2$V7,order=TRUE)
+# dat2$V10 =factor(dat2$V10,order=TRUE)
+
+# cleaning NA values(dropping rows containing NA values)
+dat2 <- dat2 %>% drop_na()
+```
+
+```{r}
+set.seed(123) # Setting seed
+kms <- kmeans(dat2[,c(2,3)], centers = 4, nstart = 100)
+kms[2]
+```
+
+
+```{r}
+fviz_cluster(kms, data = dat2[,c(2,3)], alpha=0.2,shape=19,geom = "point") 
+```
+
+<br>
+From above we can see that we have 4 clusters for our countries.
+
+
+
+
+
+
+
+
+
+
+
+
+
