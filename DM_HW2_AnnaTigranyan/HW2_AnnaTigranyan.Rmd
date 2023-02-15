@@ -1,0 +1,476 @@
+---
+title: "Homework Assignment 2"
+author: "Anna Tigranyan"
+output: html_document
+---
+
+# Task 1 (20 points): Cleaning and Understanding Data and Logit
+<br>
+**a.**Load the file. Get rid of variables that are irrelevant for logistic regression analysis using the function select(). Also, skip variables which are absent in the description. Check whether the data types are correct, if not make appropriate corrections assigning labels to each level according to the data description.<bt>
+
+**b.**For numeric variable replace missing values by column mean, for categorical variables, remove observations with missing values. How many variables and observations do you have before and now?<br>
+
+**c.**Check the relationship between each numeric variable and the presence of kidney disease. Save only two most important numeric variables using boxplots. Add mean values to boxplot. Comment on it.<br>
+
+**d**Use glm() function to perform a logistic regression with Class as the response and one of numeric variables as the predictor by using the results of previous subtask. Use the summary() function to print the result. Is the coefficient of explanatory variable significant? Why?<br>
+
+**e**Plot the relationship between response and predictor variables with sigmoid line.<br>
+
+## a. Load the file. Get rid of variables that are irrelevant for logistic regression analysis using the function select(). Also, skip variables which are absent in the description. Check whether the data types are correct, if not make appropriate corrections assigning labels to each level according to the data description
+
+```{r results="hide", message=FALSE, warning=FALSE}
+library(readr)
+df <- read_csv("biodata.csv")
+```
+
+
+Target variable:  **class** <br>
+<br>
+      **id**    - id <br>
+			**age**		-	age (age in years) 	<br>
+			**bp**		-	blood pressure (bp in mm/Hg)<br>
+			**su**		-	sugar {0,1,2,3,4,5}<br>
+			**rbc**		-	red blood cells {normal,abnormal}<br>
+			**ba**		-	bacteria {present,notpresent}<br>
+			**bgr**		-	blood glucose random (mgs/dl)<br>
+			**sod**		-	sodium (mEq/L)<br>
+			**pot**		-	potassium (mEq/L)<br>
+			**hemo**		-	hemoglobin (gms)<br>
+			**wbcc**		-	white blood cell count (cells/cumm)<br>
+			**rbcc**		-	red blood cell count (millions/cmm)<br>
+			**htn**		-	hypertension {yes,no}<br>
+			**dm**		-	diabetes mellitus {yes,no}<br>
+			**cad**		-	coronary artery disease {yes,no}<br>
+			**appet**	-	appetite {good,poor}<br>
+			**ane**		-	anemia {yes,no}<br>
+			<br>
+			**class**		-	presence of chronic kidney disease {ckd:1,notckd:0}
+
+
+
+```{r}
+head(df)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+print(nrow(df))
+print(ncol(df))
+```
+Irrelevant variables: <br>
+**id**<br>
+<br>
+Variables which are absent in the description:<br>
+**sc**<br>
+**pcv**<br>
+**pe**<br>
+<br>
+Let's get rid of this variables:
+```{r message=FALSE, warning=FALSE }
+df <- subset(df, select=-c(id,sc,pcv,pe))# using select() with '-' we choose variables
+                                        # which we want to drop from our data set (df)
+```
+
+```{r message=FALSE, warning=FALSE }
+sapply(df,class)
+```
+
+```{r message=FALSE, warning=FALSE}
+# age,bp,sod,pot,bgr,hemo,wbcc,rbcc are numeric (not "character")
+df$age <- as.numeric(df$age)
+df$bp <- as.numeric(df$bp)
+df$bgr <- as.numeric(df$bgr)
+df$sod <- as.numeric(df$sod)
+df$pot <- as.numeric(df$pot)
+df$hemo <- as.numeric(df$hemo)
+df$wbcc <- as.numeric(df$wbcc)
+df$rbcc <- as.numeric(df$rbcc)
+
+
+# su is orderd factor
+
+df$su <- factor(df$su,levels = c(0,1,2,3,4,5),ordered = TRUE)
+
+# rbc,ba,htn,dm,cad.appet,ane,class are factor
+
+df$rbc <- factor(df$rbc,levels = c('normal','abnormal'),labels = c('normal','abnormal'))
+df$ba <- factor(df$ba,levels = c('present','notpresent'),labels = c('present','notpresent'))
+df$htn <- factor(df$htn,levels = c('no','yes'),labels = c('no','yes'))
+df$dm <- factor(df$dm,levels = c('no','yes'),labels = c('no','yes'))
+df$cad <- factor(df$cad,levels = c('no','yes'),labels = c('no','yes'))
+df$appet <- factor(df$appet,levels = c('good','poor'),labels = c('good','poor'))
+df$ane <- factor(df$ane,levels = c('no','yes'),labels = c('no','yes'))
+df$class <- factor(df$class,levels = c(0,1),labels = c('notckd','ckd'))
+
+```
+
+```{r message=FALSE, warning=FALSE}
+str(df)
+```
+## b.For numeric variable replace missing values by column mean, for categorical variables, remove observations with missing values. How many variables and observations do you have before and now?
+
+```{r}
+sum(is.na(df))
+```
+We have **560** missing values in our data set<br>
+<br>
+Replacing missing values by column **mean** for **numeric** variables
+```{r message=FALSE, warning=FALSE}
+for(i in 1:ncol(df)) {
+  if (is.numeric(df[[i]])){
+     df[[i]][is.na(df[[i]])] <- mean(df[[i]], na.rm = TRUE)
+  }
+}
+```
+
+```{r}
+sum(is.na(df))
+```
+**Removing** observations with missing values for categorical variables<br>
+In our data we have only 2 data types: numeric and factor: We have replaced NAs for numeric variables and now we  have NAs(70) only in  categorical columns.So we can just drop columns containing NA values.
+```{r message=FALSE, warning=FALSE}
+library(tidyr)
+df <- df %>% drop_na()
+```
+
+```{r}
+sum(is.na(df))
+```
+```{r message=FALSE, warning=FALSE, include=FALSE}
+print(nrow(df))
+print(ncol(df))
+```
+
+We don't have NA values in our data anymore.<br>
+<br>
+**Variables and observations(before and now)**<br>
+observations before: **381**<br>
+variables befor: **21**<br>
+observations now: **322**<br>
+variables now:**17**<br>
+
+
+## c. Check the relationship between each numeric variable and the presence of kidney disease. Save only two most important numeric variables using boxplots. Add mean values to boxplot. Comment on it.<br>
+<br>
+
+Checking the relationship between each numeric variable and the presence of kidney disease by using **biserial correlation** which computes the point-biserial correlation between a dichotomous and a continuous variable.
+
+```{r message=FALSE, warning=FALSE}
+library(ltm)
+
+for(i in 1:ncol(df)) {
+  if (is.numeric(df[[i]])){
+      corr <- biserial.cor(df[[i]], df$class)
+      cat('Correlation between',colnames(df)[i],'& class is:', corr, '\n')
+      
+  }
+}
+```
+
+```{r warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+Plot1 <- ggplot(df, aes(x = hemo, y = class)) + 
+          geom_boxplot(outlier.size=5,outlier.shape=20,outlier.colour="red",fill='cyan') +
+          stat_summary(fun.y=mean, geom="point", shape=15, size=5, color="blue")
+
+
+Plot2 <- ggplot(df, aes(x = rbcc, y = class)) +  
+          geom_boxplot(outlier.size=5,outlier.shape=20,outlier.colour="red",fill='cyan')+
+          stat_summary(fun.y=mean, geom="point", shape=15, size=5, color="blue")
+
+
+grid.arrange(Plot1,Plot2,ncol = 1,top = "Boxplots of the two most important variables")
+
+```
+<br>
+From above boxplots  we can say that:<br>
+**-**If hemoglobin level is high the risk of having chronic kidney disease is low.<br>
+**-**If red blood cells level is high the risk of having chronic kidney disease is low.<br>
+**-**We have outliers when 'chronic kidney disease' class is **ckd**<br>
+**-**Distribution of **rbcc boxplot for ckd class** is negatively skewed.
+<br>
+<br>
+
+## d. Use glm() function to perform a logistic regression with Class as the response and one of numeric variables as the predictor by using the results of previous subtask. Use the summary() function to print the result. Is the coefficient of explanatory variable significant? Why?
+
+```{r message=FALSE, warning=FALSE}
+log_reg <- glm(class~hemo, data = df, family = binomial)
+summary(log_reg)
+```
+The coefficient of explanatory variable is significant, which we can easily see from **Signif.codes**: which is significant.
+**Z value** for hemo is **8.446**. If the z-value is too big , it indicates that the corresponding true regression coefficient is not 0(it shows **Pr(>|z|)**), so it is significant. <br>
+<br>
+
+## e.Plot the relationship between response and predictor variables with sigmoid line/<br>
+<br>
+
+Creating new variable **class1**(which is the same as class, but values are integers) in order to plot sigmoid line.
+```{r message=FALSE, warning=FALSE}
+df$class1 <- as.integer(df$class)
+df$class1[df$class1==1] <- 0
+df$class1[df$class1==2] <-1
+
+```
+
+```{r warning=FALSE, warning=FALSE}
+p <-ggplot(data=df,aes(x=hemo,y=class1)) + 
+  geom_jitter(width = 0,height = 0.05, alpha = 0.7,size=2,color='blue') +
+  geom_smooth(method = 'glm',se=FALSE,color='red',size=2,method.args=list(family='binomial'))+
+  ggtitle("Relationship between 'class' and 'hemo' variables with sigmoid line")
+p
+```
+
+```{r message=FALSE, warning=FALSE}
+df <- subset(df, select=-class1)# removing class1 from df
+```
+
+# Task 2 (30 points): Simple Logistic Regression<br>
+<br>
+Use the function glm() to perform logistic regression with Class as a response variable and one of the categorical variables as the predictor. Chose the significant one. Use the function summary() to print the results.<br>
+<br>
+**a.**Interpret the coefficients of the explanatory variable in terms of absolute (rather than exponential values).<br>
+<br>
+**b.**Evaluate the probability of/for the base value of explanatory variable. Comment on it.<br>
+<br>
+**c.**What are Null deviance and residual deviance from the summary output?<br>
+<br>
+**d.**Calculate the exponent of the β1 coefficient using only your data and functions addmargins() and table(). Comment on it.<br>
+
+```{r message=FALSE, warning=FALSE, results="hide"}
+for(i in 1:(ncol(df)-1)) {
+  if (is.factor(df[[i]])){
+      print("---------------------------------------------------------------")
+      print(colnames(df)[i])
+      mod = glm(class ~ df[[i]], data = df, family = binomial)
+      print(summary(mod))
+  }
+}
+
+```
+Let's look logistic regression summary for **anemia(ane)** variable:
+
+```{r message=FALSE, warning=FALSE}
+log_reg1 <- glm(class~ane, data = df, family = binomial)
+summary(log_reg1)
+```
+## a.Interpret the coefficients of the explanatory variable in terms of absolute (rather than exponential values).<br>
+<br>
+First notice that this coefficient is statistically significant.And because it is a positive number, we can say that **anemia** increases the risk of having a chronic kidney disease.<br>
+ **e^β1** = e^1.60780 = **4.9** ---->**odds ratio**<br>
+It means that:<br>
+-The person **with anemia** has a **4.9** times the odds of the  person **with no-anemia** of having chronic kidney disease.<br>
+-**Having anemia** multiplies by **4.9** the probability of having chronic kidney disease compared to **not having anemia**.<br>
+<br>
+
+
+## b.Evaluate the probability of/for the base value of explanatory variable. Comment on it.<br>
+
+<br>
+prob = 1/(1+exp(-β)) = 1/(1+exp(-1.60780)) = 0.83 = 83%<br>
+The probability that a person who  have anemia will have a chronic kidney disease is **83%**.
+<br>
+<br>
+
+
+## c.What are Null deviance and residual deviance from the summary output? <br>
+
+<br>
+**Null deviance:** 440.36  on 321  degrees of freedom<br>
+**Residual deviance:** 417.99  on 320  degrees of freedom<br>
+<br>
+The **null deviance** tells us how well the response variable can be predicted by a model with only an intercept term.<br>
+The **residual deviance** tells us how well the response variable can be predicted by a model with p predictor variables. The lower the value, the better the model is able to predict the value of the response variable.
+<br>
+<br>
+
+## d.Calculate the exponent of the β1 coefficient using only your data and functions addmargins() and table(). Comment on it.<br>
+
+```{r}
+
+addmargins(table(df$ane,df$class))
+
+```
+**exp(β1)** = (P(ckd/yes)/1 -P(ckd/yes)) / (P(ckd/no)/1 -P(ckd/no))<br>
+We can calculate P(ckd/yes) in following way:<br> 
+P(ckd/yes) = (p(yes/ckd) x p(ckd) )/ p(yes) (Bayes formula)<br>
+From above table we can calculate:<br>
+p(ckd/yes) = 47/56 = **0.83**<br>
+P(ckd/no) = 136/266 = **0.51**<br>
+Now let's calculate:<br>
+exp(β1) = ( 0.83/(1-0.83) ) / ( 0.51/(1-0.51) ) = 4,9<br>
+So we get **exp(β1)** = **4.9**<br>
+<br>
+
+
+
+# Task 3 (40 points): Multiple Logistic Regression<br>
+<br>
+**a.**Divide the data frame into Train and Test sets (70:30), such that the proportion of Class for both training and testing sets will correspond to the distribution of Class in the whole data.2 Use the full data set to perform the model with Class as a dependent variable with the function stepAIC() to obtain the best model based on AIC criteria. Hide the output.<br>
+<br>
+**b.**Remove all non-significant variables from the last model. Show only the best model in which all variables must be significant at least at the level 0.01. Use the summary() function to print the result.<br>
+<br>
+**c.**Pick your own new observation and predict the response. Comment on it.<br>
+<br>
+**d.**Now fit two logistic regression models using training data. Both models should be the result of previous subtask (a).<br>
+<br>
+**e.**For the first model with only significant coefficients, predict the probability of the presence of chronic kidney disease for testing set. Compute the confusion matrix using table() function. Figure out the overall fraction of correct predictions, sensitivity, and specificity for the test data using only confusion matrix. Check your computations using the function confusionMatrix().<br>
+<br>
+**f.**Explain what the confusion matrix is telling you about the types of mistakes made by logistic regression.<br>
+<br>
+<br>
+
+## a.Divide the data frame into Train and Test sets (70:30), such that the proportion of Class for both training and testing sets will correspond to the distibution of Class in the whole data.Use the full data set to perform the model with Class as a dependent variable with the function stepAIC() to obtain the best model based on AIC criteria. Hide the output<br>
+<br>
+Dividing the data frame into Train and Test sets:
+```{r warning=FALSE, message=FALSE}
+set.seed(7891)
+
+dt = sample(nrow(df), nrow(df)*.7)
+train <- df[dt,]# Creating train data
+test <- df[-dt,]# Creating test data
+
+```
+
+```{r message=FALSE, warning=FALSE,results="hide"}
+mod = glm(class ~ ., data = df, family = binomial)
+print(stepAIC(mod))
+```
+The best model based on AIC criteria is:
+```{r message=FALSE, warning=FALSE}
+best_mod <- glm(formula = class ~ age + bp + rbc + bgr + hemo + rbcc + htn + 
+    cad, family = binomial, data = df)
+summary(best_mod)
+```
+## b.Remove all non-significant variables from the last model. Show only the best model in which all variables must be significant at least at the level 0.01. Use the summary() function to print the result.<br>
+```{r message=FALSE, warning=FALSE}
+best_model <- glm(formula = class ~ rbc + bgr + hemo, family = binomial, data = df)
+summary(best_model)
+```
+## c.Pick your own new observation and predict the response. Comment on it.
+```{r message=FALSE, warning=FALSE}
+
+obs <- df[250, ] # to pick an observation (obs class is notckd)
+
+# Making a prediction for obs using the best_model
+pred = predict(best_model,obs,type = "response")
+
+# Making binary predictions-vector using a cut-off of 50%
+pred_cutoff_50 <- ifelse(pred > 0.5,'ckd','notckd')
+print(pred_cutoff_50)
+```
+From above we can say that:<br>
+According to our model prediction(and cutoff=50%) observed person don't have chronic kidney disease('notckd'), which is true.<br>
+<br>
+
+
+## d.Now fit two logistic regression models using training data. Both models should be the result of previous subtask(a)<br>
+
+
+```{r message=FALSE, warning=FALSE}
+model1 <- glm(formula = class ~ rbc + bgr + hemo, family = binomial, data = df) #best model
+
+model2 <- glm(formula = class ~ ., family = binomial, data = train) #full model
+ 
+```
+
+
+## e.For the first model with only significant coefficients, predict the probability of the presence of chronic kidney disease for testing set. Compute the confusion matrix using table() function. Figure out the overall fraction of correct predictions, sensitivity, and specificity for the test data using only confusion matrix. Check your computations using the function confusionMatrix()
+
+
+```{r message=FALSE, warning=FALSE}
+probs <- model1 %>% predict(test, type = "response")
+
+preds_cutoff_50 <- ifelse(probs>0.5,'ckd','notckd') 
+
+conf_mat <- table(test$class,preds_cutoff_50)
+conf_mat
+
+```
+
+```{r}
+TP <- conf_mat[2]
+TN <- conf_mat[3]
+FP <- conf_mat[1]
+FN <- conf_mat[4]
+
+cat(' Accuracy:','(TP+TN)/(TP+TN+FP+FN) =',(TP+TN)/(TP+TN+FP+FN),'\n',
+    'Precision:','TP/(TP+FP) =',TP/(TP+FP),'\n',
+    'Sensitivity:','TP/(TP+FN) =',TP/(TP+FN),'\n',
+    'Specificity:','TN/(FP+TN) =',TN/(FP+TN),'\n')
+
+```
+Checking our computations using the function confusionMatrix()
+```{r message=FALSE, warning=FALSE}
+library(caret)
+
+pred_value <- factor(preds_cutoff_50)
+
+confusionMatrix(pred_value,test$class)
+```
+## f.Explain what the confusion matrix is telling you about the types of mistakes made by logistic regression.<br>
+<br>
+From confusion matrix we can see that:<br>
+<br>
+-logistic regression model performed well: the accuracy (how often our classifier is right) is 98% and it means that the model makes **wrong predictions** in **2%** cases.<br>
+-we have only 2 mistakes which both are FN(**False Negative**).It means that in 2 cases logitic model have **predicted** that *person don't have chronic kidney disease* but **in fact** *he/she does*.
+
+
+# Questions (10 points)<br>
+<br>
+**a**.What is the difference between the ROC and the precision-recall curve (PRC)? When do we need to consider PRC? Why?
+<br>
+**b**.Why Linear Probability Model is not preferable to Logistic Regression for models with binary response variable?
+<br>
+**c**.Is it possible to calculate R2 for Logistic Regression? Is it the same as for Linear Regression? Why?
+<br>
+<br>
+
+## a.What is the difference between the ROC and the precision-recall curve (PRC)? When do we need to consider PRC? Why? <br>
+**A precision-recall curve(PRC)** shows the relationship between precision (= positive predictive value) and recall (= sensitivity) for every **possible cut-off**. The PRC is a graph with: <br>
+<br>
+•The x-axis showing recall (= sensitivity = TP / (TP + FN))<br>
+•The y-axis showing precision (= positive predictive value = TP / (TP + FP))<br>
+<br>
+**An ROC curve (receiver operating characteristic curve)** is a graph showing the performance of a classification model for all **possible cut-offs**. This curve plots two parameters:<br>
+<br>
+•True Positive Rate(= sensitivity = TP / (TP + FN))
+•False Positive Rate( = FPR = FP/FP+TN)
+<br>
+<br>
+The main **difference** between ROC curves and precision-recall curves is that the number of true-negative results is not used for making a PRC.<br>
+<br>
+Much like the ROC curve, The precision-recall curve is used for evaluating the performance of binary classification algorithms. It is often used in situations where classes are heavily **imbalanced**.Specifically, there are many examples of no event (class 0) and only a few examples of an event (class 1).<br>
+The reason for this is that typically the large number of class 0 examples means we are less interested in the skill of the model at predicting class 0 correctly, e.g. high true negatives.<br>
+Key to the calculation of precision and recall is that the calculations do not make use of the true negatives. It is only concerned with the correct prediction of the minority class, class 1.
+
+
+## b.Why Linear Probability Model is not preferable to Logistic Regression for models with binary response variable?<br>
+
+
+In Linear Probability Model it is possible to get y_hat < 0 or y_hat > 1. But we can't have a probability below 0 or above 1.This is not just a technical problem: as a result its estimates will differ if the range of X differs. For instance, if X makes the outcome more likely, and we observe a moderate range of X we will get a certain positive slope coefficient from the LPM. If we supplement the sample with observations from a higher range of X (sufficiently high that the observed proportion with the outcome is close to 100%), the slope coefficient will tend to be depressed, necessarily to accommodate the observations with the higher X but the at-most marginally higher proportion of the outcome. The same is not true of the logistic model.
+<br>
+<br>
+
+
+
+## c.Is it possible to calculate R2 for Logistic Regression? Is it the same as for Linear Regression? Why?<br>
+<br>
+ It is not entirely obvious what its definition of Rsquared(for logistic regression) should be. Over the years, different researchers have proposed different measures for logistic regression, with the objective usually that the measure inherits the properties of the familiar R squared from linear regression.One of them is **McFaddena's R squared**, and it is the default a pseudo R2 value. <br>
+This value uses the log-likelihood of the specified model and a corresponding "intercept-only" model (values that Prism can report) and determines their ratio. This ratio is then subtracted from 1 to determine the reported value. A small ratio (and thus a final value close to 1) indicates that the specified model is better than an intercept-only model.<br>
+So we can say that McFaddena's R squared shows: **is specified model is better than an intercept-only model**(so it is not the same as R^2 in Linear Regression which indicates the percentage of the variance in the dependent variable that the independent variables explain collectively  )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
